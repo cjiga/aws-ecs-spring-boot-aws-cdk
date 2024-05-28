@@ -1,5 +1,6 @@
 package com.cjiga.auditservice.products.repositories;
 
+import com.amazonaws.xray.spring.aop.XRayEnabled;
 import com.cjiga.auditservice.events.dto.ProductEventDto;
 import com.cjiga.auditservice.events.dto.ProductEventType;
 import com.cjiga.auditservice.products.models.ProductEvent;
@@ -9,15 +10,23 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 
 @Repository
+@XRayEnabled
 public class ProductEventsRepository {
 
     private static final Logger LOG = LogManager.getLogger(ProductEventsRepository.class);
@@ -54,5 +63,41 @@ public class ProductEventsRepository {
 
         productEvent.setInfo(productInfoEvent);
         return productEventTable.putItem(productEvent);
+    }
+
+    private Map<String, AttributeValue> buildExclusiveStartKey(String pk, String exclusiveStartTimestamp) {
+        return (exclusiveStartTimestamp!= null) ?
+                Map.of(
+                        "pk", AttributeValue.builder().s(pk).build(),
+                        "sk", AttributeValue.builder().s(exclusiveStartTimestamp).build())
+                : null;
+    }
+
+    public SdkPublisher<Page<ProductEvent>> findByType(String productEventType, String exclusiveStartTimestamp, int limit) {
+        String pk = "#product_".concat(productEventType);
+        return productEventTable.query(QueryEnhancedRequest.builder()
+                        .queryConditional(QueryConditional.keyEqualTo(Key.builder()
+                                        .partitionValue(pk)
+                                .build()))
+                        .exclusiveStartKey(buildExclusiveStartKey(pk, exclusiveStartTimestamp))
+                        .limit(limit)
+                .build()).limit(1);
+    }
+
+    public SdkPublisher<Page<ProductEvent>> findByTypeAndRange(
+            String productEventType,
+            String exclusiveStartTimestamp,
+            String from,
+            String to,
+            int limit) {
+        String pk = "#product_".concat(productEventType);
+        return productEventTable.query(QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.sortBetween(
+                        Key.builder().partitionValue(pk).sortValue(from).build(),
+                        Key.builder().partitionValue(pk).sortValue(to).build()
+                ))
+                .exclusiveStartKey(buildExclusiveStartKey(pk, exclusiveStartTimestamp))
+                .limit(limit)
+                .build()).limit(1);
     }
 }
