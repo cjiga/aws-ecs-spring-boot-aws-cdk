@@ -31,13 +31,13 @@ public class ProductEventsRepository {
 
     private static final Logger LOG = LogManager.getLogger(ProductEventsRepository.class);
     private final DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
-    private final DynamoDbAsyncTable<ProductEvent> productEventTable;
+    private final DynamoDbAsyncTable<ProductEvent> productEventsTable;
 
     @Autowired
     public ProductEventsRepository(@Value("${aws.events.ddb}") String eventsDdbName,
                                    DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient) {
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
-        this.productEventTable = dynamoDbEnhancedAsyncClient.table(eventsDdbName, TableSchema.fromBean(ProductEvent.class));
+        this.productEventsTable = dynamoDbEnhancedAsyncClient.table(eventsDdbName, TableSchema.fromBean(ProductEvent.class));
     }
 
     public CompletableFuture<Void> create(ProductEventDto productEventDto,
@@ -62,25 +62,26 @@ public class ProductEventsRepository {
         productInfoEvent.setTraceId(traceId);
 
         productEvent.setInfo(productInfoEvent);
-        return productEventTable.putItem(productEvent);
+        return productEventsTable.putItem(productEvent);
     }
 
     private Map<String, AttributeValue> buildExclusiveStartKey(String pk, String exclusiveStartTimestamp) {
-        return (exclusiveStartTimestamp!= null) ?
+        return (exclusiveStartTimestamp != null) ?
                 Map.of(
                         "pk", AttributeValue.builder().s(pk).build(),
                         "sk", AttributeValue.builder().s(exclusiveStartTimestamp).build())
                 : null;
     }
 
-    public SdkPublisher<Page<ProductEvent>> findByType(String productEventType, String exclusiveStartTimestamp, int limit) {
+    public SdkPublisher<Page<ProductEvent>> findByType(String productEventType, String exclusiveStartTimestamp,
+                                                       int limit) {
         String pk = "#product_".concat(productEventType);
-        return productEventTable.query(QueryEnhancedRequest.builder()
-                        .queryConditional(QueryConditional.keyEqualTo(Key.builder()
-                                        .partitionValue(pk)
-                                .build()))
-                        .exclusiveStartKey(buildExclusiveStartKey(pk, exclusiveStartTimestamp))
-                        .limit(limit)
+        return productEventsTable.query(QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.keyEqualTo(Key.builder()
+                        .partitionValue(pk)
+                        .build()))
+                .exclusiveStartKey(buildExclusiveStartKey(pk, exclusiveStartTimestamp))
+                .limit(limit)
                 .build()).limit(1);
     }
 
@@ -91,11 +92,10 @@ public class ProductEventsRepository {
             String to,
             int limit) {
         String pk = "#product_".concat(productEventType);
-        return productEventTable.query(QueryEnhancedRequest.builder()
+        return productEventsTable.query(QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.sortBetween(
                         Key.builder().partitionValue(pk).sortValue(from).build(),
-                        Key.builder().partitionValue(pk).sortValue(to).build()
-                ))
+                        Key.builder().partitionValue(pk).sortValue(to).build()))
                 .exclusiveStartKey(buildExclusiveStartKey(pk, exclusiveStartTimestamp))
                 .limit(limit)
                 .build()).limit(1);

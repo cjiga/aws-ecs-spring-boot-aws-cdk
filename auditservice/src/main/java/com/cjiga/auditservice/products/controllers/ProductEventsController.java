@@ -44,7 +44,7 @@ public class ProductEventsController {
         SdkPublisher<Page<ProductEvent>> productEventsPublisher =
                 (from !=null && to !=null) ?
                         productEventsRepository.findByTypeAndRange(
-                                eventType, from, to, exclusiveStartTimestamp, limit) :
+                                eventType, exclusiveStartTimestamp, from, to, limit) :
                         productEventsRepository.findByType(
                                 eventType, exclusiveStartTimestamp, limit);
         AtomicReference<String> lastEvaluatedTimestamp = new AtomicReference<>();
