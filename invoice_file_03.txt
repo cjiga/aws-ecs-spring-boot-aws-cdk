@@ -1,0 +1,5 @@
+{"customerEmail":"matilde@siecola.com.br","totalValue":111.50,"products":[]}
+{"customerEmail":"doralice@siecola.com.br","invoiceNumber":"ABC-224","totalValue":121.50,"products":[{"id":"123-456","quantity":2},{"id":"123-457","quantity":1},{"id":"123-458","quantity":3},{"id":"123-459","quantity":4}]}
+{"customerEmail":"hannah@siecola.com.br","invoiceNumber":"ABC-225","totalValue":131.50,"products":[{"id":"123-456","quantity":2},{"id":"123-457","quantity":1},{"id":"123-458","quantity":3},{"id":"123-459","quantity":4}]}
+{"customerEmail":"clotilde@siecola.com.br","invoiceNumber":"ABC-226","totalValue":141.50,"products":[{"id":"123-456","quantity":2},{"id":"123-457","quantity":1},{"id":"123-458","quantity":3},{"id":"123-459","quantity":4}]}
+{"customerEmail":"doralice@siecola.com.br","invoiceNumber":"ABC-227","totalValue":151.50,"products":[{"id":"123-456","quantity":2},{"id":"123-457","quantity":1},{"id":"123-458","quantity":3},{"id":"123-459","quantity":4}]}
